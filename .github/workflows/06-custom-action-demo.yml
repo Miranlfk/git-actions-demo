@@ -1,8 +1,9 @@
 name: "06 - Custom Actions Demo"
 
-# Demonstrates using the two custom actions defined in 06-custom-actions/:
-#   - composite-action: runs multiple steps as a single reusable unit
+# Demonstrates using the three custom actions defined in 06-custom-actions/:
+#   - composite-action:  runs multiple steps as a single reusable unit
 #   - javascript-action: runs a Node.js script as an action
+#   - docker-action:     runs inside a container built from a local Dockerfile
 # Also shows referencing a public Marketplace action by tag.
 on:
   workflow_dispatch:
@@ -40,3 +41,18 @@ jobs:
 
       - name: Use JS action output
         run: echo "JS action result: ${{ steps.js-action.outputs.result }}"
+
+  use-docker-action:
+    runs-on: ubuntu-latest   # Docker actions only work on Linux runners
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run our Docker action
+        id: docker-action
+        uses: ./06-custom-actions/docker-action
+        with:
+          name: "GitHub Actions learner"
+          language: "es"
+
+      - name: Use Docker action output
+        run: echo "Docker action said ${{ steps.docker-action.outputs.greeting }}"

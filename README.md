@@ -25,7 +25,7 @@ Some workflows require optional one-time setup (secrets, environments). Each sec
 03-environment-variables/
 04-artifacts-and-caching/
 05-reusable-workflows/
-06-custom-actions/     ← README + composite-action/ + javascript-action/
+06-custom-actions/     ← README + composite-action/ + javascript-action/ + docker-action/
 07-deployment/
 08-security/
 09-containers/
@@ -51,6 +51,7 @@ Each section has a detailed README. The table below summarises the fastest way t
 | Manual (`manual-deploy` job) | Actions tab → "01 - Triggers" → Run workflow → pick environment + dry_run |
 | Release (`publish` job) | Create and publish a GitHub Release |
 | Schedule (`scheduled-audit` job) | Fires automatically every Monday 08:00 UTC |
+| External API (`external-trigger` job) | `gh api repos/:owner/:repo/dispatches -f event_type=run-external-build` |
 
 ```bash
 # Quickest manual trigger
@@ -68,7 +69,7 @@ Triggers on push to `src/**` or `tests/**`, or manually.
 gh workflow run 02-jobs.yml
 ```
 
-What runs: a 4-job matrix (ubuntu-latest + ubuntu-22.04 × 2 Python versions), a conditions demo, two parallel fan-out jobs (`unit-tests` + `lint`), and a fan-in `report` job.
+What runs: a 4-job matrix (ubuntu-latest + ubuntu-22.04 × 2 Python versions), an advanced matrix using `include` / `exclude` plus a `continue-on-error` experimental leg, a conditions demo with `timeout-minutes` and step-level `continue-on-error`, two parallel fan-out jobs (`unit-tests` + `lint`), and a fan-in `report` job. Workflow-level `concurrency:` cancels superseded runs.
 
 ---
 
@@ -122,7 +123,7 @@ Triggers on push to `06-custom-actions/**`, or manually.
 gh workflow run 06-custom-action-demo.yml
 ```
 
-What runs: two jobs — one using the local composite action (greeting with language input), one using the local JavaScript action. No setup required.
+What runs: three jobs — one using the local composite action (greeting with language input), one using the local JavaScript action, and one using a Docker container action built from a local Dockerfile. No setup required. Docker action runs on Linux only.
 
 ---
 

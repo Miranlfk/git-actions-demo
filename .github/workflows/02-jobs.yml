@@ -19,9 +19,11 @@ concurrency:
 jobs:
   # ── 1. Matrix ────────────────────────────────────────────────────────────
   # Runs the same job across every OS × Python version combination.
+  # timeout-minutes caps each matrix leg so a hung run can't burn budget.
   matrix-test:
     name: "Test / ${{ matrix.os }} / py${{ matrix.python-version }}"
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     strategy:
       fail-fast: false     # keep running other legs even if one fails
       matrix:
@@ -38,6 +40,49 @@ jobs:
         run: |
           echo "OS:     ${{ matrix.os }}"
           echo "Python: ${{ matrix.python-version }}"
+
+  # ── 1b. Matrix include / exclude ─────────────────────────────────────────
+  # Starts with a 2×3 grid (6 legs), then:
+  #   exclude: drops the (ubuntu-22.04, 3.10) combination → 5 legs
+  #   include: adds one extra leg (ubuntu-latest, 3.13) with a custom
+  #            'experimental' parameter that doesn't exist in the base grid.
+  # Use this pattern when you want most combinations plus a few one-offs
+  # (e.g. only test the latest Python on a bleeding-edge OS).
+  matrix-include-exclude:
+    name: "Advanced / ${{ matrix.os }} / py${{ matrix.python-version }}${{ matrix.experimental && ' (experimental)' || '' }}"
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-22.04]
+        python-version: ["3.10", "3.11", "3.12"]
+        exclude:
+          # Skip py3.10 on the older runner — not worth maintaining
+          - os: ubuntu-22.04
+            python-version: "3.10"
+        include:
+          # Extra one-off leg not derivable from the base grid
+          - os: ubuntu-latest
+            python-version: "3.13"
+            experimental: true
+    # continue-on-error lets the experimental leg fail without failing the workflow.
+    # Evaluated per-leg via the matrix value.
+    continue-on-error: ${{ matrix.experimental == true }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -r requirements-test.txt
+      - run: pytest tests/ -v
+      - name: Report leg type
+        run: |
+          if [ "${{ matrix.experimental }}" = "true" ]; then
+            echo "This is an experimental leg — failures are tolerated"
+          else
+            echo "Standard leg — must pass"
+          fi
 
   # ── 2. Conditions ────────────────────────────────────────────────────────
   # Demonstrates if: on both jobs and steps.
@@ -64,6 +109,19 @@ jobs:
       - name: Runs only if previous step output == 'ok'
         if: steps.check.outputs.status == 'ok'
         run: echo "Check passed"
+
+      - name: Step with timeout-minutes
+        timeout-minutes: 1
+        run: echo "This step is capped at 1 minute"
+
+      - name: Non-blocking step (continue-on-error)
+        continue-on-error: true
+        run: |
+          echo "This step exits non-zero but the job keeps going"
+          exit 1
+
+      - name: Runs after the failing step thanks to continue-on-error
+        run: echo "Still running — previous failure was tolerated"
 
       - name: always() — runs even on failure
         if: always()

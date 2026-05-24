@@ -1,6 +1,6 @@
 # 06 · Custom Actions
 
-Custom actions are reusable units that encapsulate logic into a single step. This section contains two local actions and a workflow that uses both.
+Custom actions are reusable units that encapsulate logic into a single step. This section contains all three GitHub-supported action types as local actions and a workflow that uses all three.
 
 ---
 
@@ -13,6 +13,10 @@ Custom actions are reusable units that encapsulate logic into a single step. Thi
 ├── javascript-action/
 │   ├── action.yml          ← JavaScript action metadata
 │   └── index.js            ← Node.js entry point
+├── docker-action/
+│   ├── action.yml          ← Docker action metadata
+│   ├── Dockerfile          ← Image built per first use, then cached
+│   └── entrypoint.sh       ← Container entrypoint script
 └── README.md
 ```
 
@@ -108,6 +112,38 @@ The JS action reads its inputs from environment variables (the standard mechanis
 
 ---
 
+### `use-docker-action` job
+
+The workflow calls the Docker action at `./06-custom-actions/docker-action`:
+
+```yaml
+- uses: ./06-custom-actions/docker-action
+  with:
+    name: "GitHub Actions learner"
+    language: "es"
+```
+
+Open the log:
+
+**Step: "Build /06-custom-actions/docker-action/Dockerfile"** (auto-injected by the runner)
+- The runner builds the image from the local Dockerfile on the first run. Subsequent runs on the same runner reuse the cached image.
+
+**Step: "Run our Docker action"**
+```
+¡Hola, GitHub Actions learner! (from Docker)
+```
+
+**Step: "Use Docker action output"**
+```
+Docker action said ¡Hola, GitHub Actions learner! (from Docker)
+```
+
+The action runs inside an Alpine container. Inputs are passed positionally via `args:` in `action.yml` (not as env vars like the JS action). Outputs are written to `$GITHUB_OUTPUT`, a file the runner mounts into the container — exactly the same protocol as composite/JS actions.
+
+> **Linux only.** Docker actions cannot run on macOS or Windows runners. The job pin to `ubuntu-latest` is mandatory.
+
+---
+
 ## Understanding local action paths
 
 ```yaml
@@ -136,10 +172,10 @@ The bundled file includes all dependencies so the runner never needs internet ac
 
 ## Action types at a glance
 
-| Type | Runtime | How to use |
-|------|---------|-----------|
-| **Composite** | Shell on the runner | `using: "composite"` in `action.yml` |
-| **JavaScript** | Node.js on the runner | `using: "node20"` in `action.yml` |
-| **Docker** | Container pulled/built per step | `using: "docker"` in `action.yml` |
+| Type | Runtime | OS support | Best for |
+|------|---------|------------|----------|
+| **Composite** | Shell on the runner | All | Sequences of existing shell/CLI steps; thinnest wrapper |
+| **JavaScript** | Node.js on the runner | All | Logic that benefits from a real programming language and the [`@actions/*`](https://github.com/actions/toolkit) toolkit |
+| **Docker** | Container built or pulled by the runner | Linux only | Polyglot tooling, system dependencies, or a pinned reproducible runtime |
 
-Docker actions are not included in this demo because they require a Docker daemon and are slow to start — composite and JavaScript actions are preferred for most use cases.
+**Cold-start cost:** composite ≈ instant · JavaScript ≈ instant (toolkit is small) · Docker ≈ 10–60s for the first image build, near-instant when cached. Pin a tagged image (`image: "ghcr.io/owner/img:1.2.3"`) instead of `Dockerfile` to skip the build entirely.

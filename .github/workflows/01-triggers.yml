@@ -40,6 +40,13 @@ on:
   release:
     types: [published]
 
+  # 6. Repository dispatch: fires when an external system POSTs to the
+  #    repo's /dispatches API endpoint. Use it to trigger workflows from
+  #    outside GitHub (CI servers, chatops, webhooks from other repos).
+  #    'types' filters on the event_type field in the POST body.
+  repository_dispatch:
+    types: [run-external-build, run-external-audit]
+
 # ---------------------------------------------------------------------------
 
 jobs:
@@ -115,3 +122,17 @@ jobs:
           echo "Pre:  ${{ github.event.release.prerelease }}"
       - name: Simulate package publish
         run: echo "Publishing ${{ github.event.release.tag_name }} to registry..."
+
+  # Runs only when triggered via the repository_dispatch REST API
+  external-trigger:
+    if: github.event_name == 'repository_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show dispatch payload
+        run: |
+          echo "Event type:  ${{ github.event.action }}"
+          echo "Source:      ${{ github.event.client_payload.source }}"
+          echo "Reason:      ${{ github.event.client_payload.reason }}"
+          # The full client_payload object is available as JSON
+          echo '${{ toJSON(github.event.client_payload) }}'

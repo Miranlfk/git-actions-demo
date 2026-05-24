@@ -1,0 +1,33 @@
+name: "Greeting Action (Docker)"
+description: "A Docker container action that greets a user — demonstrates the third action type."
+author: "github-actions-demo"
+
+inputs:
+  name:
+    description: "Name to greet"
+    required: true
+  language:
+    description: "Language code (en | es | fr)"
+    required: false
+    default: "en"
+
+outputs:
+  greeting:
+    description: "The greeting message"
+
+# A Docker action runs the entrypoint inside a container that the runner
+# builds (or pulls) before the step starts. The image is built from the
+# Dockerfile alongside this file. `args:` are passed positionally to the
+# container's ENTRYPOINT.
+#
+# Trade-offs vs composite / JavaScript actions:
+#   + Full control over the runtime — any language, any system libs
+#   + Reproducible: pinning the base image pins the toolchain
+#   - Slower start: image build/pull adds ~10–60s the first time
+#   - Linux runners only (no macOS / Windows)
+runs:
+  using: "docker"
+  image: "Dockerfile"
+  args:
+    - ${{ inputs.name }}
+    - ${{ inputs.language }}

@@ -14,6 +14,7 @@ Every workflow starts with an `on:` block that defines what events fire it. This
 | `manual-deploy` | `workflow_dispatch` only | Reads inputs, simulates a deploy |
 | `scheduled-audit` | `schedule` only | Runs `pip-audit` against requirements |
 | `publish` | `release` only | Prints release metadata, simulates a registry publish |
+| `external-trigger` | `repository_dispatch` only | Prints the client payload sent by the external caller |
 
 ---
 
@@ -133,6 +134,39 @@ git push --delete origin v0.0.1-test
 
 ---
 
+### 6. Repository dispatch trigger → `external-trigger` job
+
+`repository_dispatch` lets you fire a workflow from **outside GitHub** — a CI server, a chatops bot, or another repository — by POSTing to the REST API. The workflow filters on the `event_type` field, so one repo can listen for multiple distinct external events.
+
+**Via GitHub CLI:**
+```bash
+gh api repos/:owner/:repo/dispatches \
+  -f event_type=run-external-build \
+  -f 'client_payload[source]=jenkins' \
+  -f 'client_payload[reason]=nightly-build'
+```
+
+**Via curl with a PAT:**
+```bash
+curl -X POST \
+  -H "Authorization: token $GH_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/<owner>/<repo>/dispatches \
+  -d '{
+    "event_type": "run-external-audit",
+    "client_payload": {"source": "external-scanner", "reason": "weekly-audit"}
+  }'
+```
+
+**What to observe:**
+- Only the `external-trigger` job runs
+- The log echoes the `event_type` (e.g. `run-external-build`) and the entire `client_payload` JSON
+- The PAT must have the `repo` scope (classic) or `contents: write` (fine-grained) for the target repo
+
+> The workflow only listens to two `types`: `run-external-build` and `run-external-audit`. POSTing any other `event_type` is a no-op — GitHub still accepts the API call (returns 204) but no workflow runs.
+
+---
+
 ## What "skipped" looks like
 
 When the `ci` job fires but `manual-deploy` does not, GitHub shows `manual-deploy` as **Skipped** in the workflow graph. This is expected — it is not a failure. The `if:` condition evaluated to `false`.
@@ -147,3 +181,4 @@ When the `ci` job fires but `manual-deploy` does not, GitHub shows `manual-deplo
 | Event routing with `if:` | Each run — only the matching job is not skipped |
 | Typed dispatch inputs | Manual run form in the UI |
 | PR context vs push context | `PR #` is populated on PR, empty on push |
+| External API trigger | `repository_dispatch` — fire workflows from outside GitHub |
