@@ -68,7 +68,7 @@ Triggers on push to `src/**` or `tests/**`, or manually.
 gh workflow run 02-jobs.yml
 ```
 
-What runs: a 5-job matrix (3 OS × 2 Python), a conditions demo, two parallel fan-out jobs (`unit-tests` + `lint`), and a fan-in `report` job.
+What runs: a 4-job matrix (ubuntu-latest + ubuntu-22.04 × 2 Python versions), a conditions demo, two parallel fan-out jobs (`unit-tests` + `lint`), and a fan-in `report` job.
 
 ---
 
