@@ -1,0 +1,22 @@
+name: "Hello World (JavaScript Action)"
+description: "A minimal JavaScript action that logs a message and sets an output"
+author: "github-actions-demo"
+
+inputs:
+  repo-token:
+    description: "GitHub token for API calls"
+    required: true
+  message:
+    description: "Message to log"
+    required: false
+    default: "Hello from a JavaScript action!"
+
+outputs:
+  result:
+    description: "Echoed input message"
+
+# JavaScript actions run directly on the runner (no Docker overhead).
+# The 'main' file is the entry point; pre/post are optional lifecycle hooks.
+runs:
+  using: "node20"
+  main: "index.js"

@@ -1,0 +1,124 @@
+name: "03 - Variables and Expressions"
+
+# Covers:
+#   - env: at workflow / job / step scope
+#   - GITHUB_ENV and GITHUB_PATH (runtime variable setting)
+#   - Repository variables (vars context)
+#   - Contexts: github, runner, steps, needs, matrix
+#   - Expression syntax and built-in functions
+on:
+  workflow_dispatch:
+  push:
+    paths: ["03-environment-variables/**"]
+
+# Workflow-level variables — available in every job and step
+env:
+  APP_NAME: "github-actions-demo"
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  # ── 1. Variable scopes ───────────────────────────────────────────────────
+  variable-scopes:
+    runs-on: ubuntu-latest
+    env:
+      REGION: "us-east-1"    # job-level — overrides workflow-level if same name
+    steps:
+      - name: Show workflow and job-level vars
+        run: |
+          echo "APP_NAME (workflow): $APP_NAME"
+          echo "REGION   (job):      $REGION"
+
+      - name: Step-level override
+        env:
+          REGION: "eu-west-1"    # shadows the job-level REGION for this step only
+          STEP_ONLY: "only here"
+        run: |
+          echo "REGION    (step):  $REGION"
+          echo "STEP_ONLY (step):  $STEP_ONLY"
+
+      - name: After the step, job-level REGION is back
+        run: |
+          echo "REGION (job again): $REGION"
+          echo "STEP_ONLY:          '${STEP_ONLY}' (empty — out of scope)"
+
+      - name: GITHUB_ENV — persist a variable for later steps
+        run: |
+          echo "DYNAMIC_VAR=set-at-runtime" >> $GITHUB_ENV
+          echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_ENV
+
+      - name: Read the dynamically set variable
+        run: |
+          echo "DYNAMIC_VAR: $DYNAMIC_VAR"
+          echo "BUILD_TIME:  $BUILD_TIME"
+
+      - name: GITHUB_PATH — extend PATH for later steps
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      # Repository Variables (non-secret config):
+      #   Settings > Secrets and variables > Variables > New repository variable
+      - name: vars context (repository variables)
+        run: |
+          echo "vars.MY_CONFIG_VALUE: '${{ vars.MY_CONFIG_VALUE }}'"
+          echo "(Empty until you set MY_CONFIG_VALUE in repo settings)"
+
+  # ── 2. Contexts ──────────────────────────────────────────────────────────
+  explore-contexts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: github context
+        run: |
+          echo "repository:      ${{ github.repository }}"
+          echo "event_name:      ${{ github.event_name }}"
+          echo "ref_name:        ${{ github.ref_name }}"
+          echo "sha:             ${{ github.sha }}"
+          echo "actor:           ${{ github.actor }}"
+          echo "run_id:          ${{ github.run_id }}"
+          echo "run_number:      ${{ github.run_number }}"
+          echo "workflow:        ${{ github.workflow }}"
+          echo "server_url:      ${{ github.server_url }}"
+
+      - name: runner context
+        run: |
+          echo "os:          ${{ runner.os }}"
+          echo "arch:        ${{ runner.arch }}"
+          echo "name:        ${{ runner.name }}"
+          echo "temp:        ${{ runner.temp }}"
+          echo "tool_cache:  ${{ runner.tool_cache }}"
+
+      - name: Capture step output to use in 'steps' context
+        id: my-step
+        run: echo "color=blue" >> $GITHUB_OUTPUT
+
+      - name: steps context
+        run: |
+          echo "my-step outcome: ${{ steps.my-step.outcome }}"
+          echo "my-step output:  ${{ steps.my-step.outputs.color }}"
+
+  # ── 3. Expression syntax and functions ───────────────────────────────────
+  expressions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Built-in string functions
+        run: |
+          echo "contains:   ${{ contains('hello world', 'world') }}"
+          echo "startsWith: ${{ startsWith('v1.2.3', 'v') }}"
+          echo "endsWith:   ${{ endsWith('build.zip', '.zip') }}"
+          echo "format:     ${{ format('Hello {0}!', github.actor) }}"
+          echo "toJSON:     ${{ toJSON(github.event_name) }}"
+
+      - name: Status check functions
+        run: echo "testing status functions in next step"
+
+      - name: success() / failure() / always()
+        if: success()
+        run: echo "success() is true — previous step passed"
+
+      - name: Simulated ternary (no native ternary in Actions)
+        run: |
+          # condition && value-if-true || value-if-false
+          TARGET="${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}"
+          echo "Target: $TARGET"
+
+      - name: hashFiles (used in cache keys)
+        run: |
+          echo "Hash of requirements: ${{ hashFiles('**/requirements*.txt') }}"

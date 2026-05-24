@@ -1,0 +1,39 @@
+name: "Greeting Action (Composite)"
+description: "A composite action that greets a user and returns the greeting as an output"
+author: "github-actions-demo"
+
+inputs:
+  name:
+    description: "Name to greet"
+    required: true
+  language:
+    description: "Language code (en | es | fr)"
+    required: false
+    default: "en"
+
+outputs:
+  greeting:
+    description: "The greeting message"
+    value: ${{ steps.build-greeting.outputs.message }}
+
+# A composite action runs a sequence of steps — it can use run:, uses:, and
+# even other composite actions. Think of it as an inline reusable workflow
+# but lighter weight (no job overhead, shares the parent runner).
+runs:
+  using: "composite"
+  steps:
+    - name: Build greeting
+      id: build-greeting
+      shell: bash
+      run: |
+        case "${{ inputs.language }}" in
+          es) MSG="¡Hola, ${{ inputs.name }}!" ;;
+          fr) MSG="Bonjour, ${{ inputs.name }} !" ;;
+          *)  MSG="Hello, ${{ inputs.name }}!"   ;;
+        esac
+        echo "message=$MSG" >> $GITHUB_OUTPUT
+        echo "Greeting built: $MSG"
+
+    - name: Print greeting
+      shell: bash
+      run: echo "${{ steps.build-greeting.outputs.message }}"

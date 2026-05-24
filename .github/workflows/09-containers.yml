@@ -1,0 +1,83 @@
+name: "09 - Containers"
+
+# Two container patterns:
+#   1. Job container: the entire job runs inside a container image
+#   2. Service containers: sidecar containers (databases, caches) available to the job
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "09-containers/**"
+
+jobs:
+  # Pattern 1: Run the whole job inside a container
+  job-in-container:
+    runs-on: ubuntu-latest
+    container:
+      image: node:20-alpine
+      env:
+        NODE_ENV: test
+      options: --cpus 1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify we are inside the container
+        run: |
+          echo "Node: $(node --version)"
+          echo "OS:   $(cat /etc/os-release | grep PRETTY_NAME)"
+          echo "User: $(whoami)"
+
+      - name: Run tests inside container
+        run: node --version && echo "Tests would run here"
+
+  # Pattern 2: Service containers (sidecars)
+  tests-with-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        # Wait until postgres is healthy before starting job steps
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to Postgres
+        run: |
+          sudo apt-get install -y postgresql-client
+          PGPASSWORD=testpass psql -h localhost -U testuser -d testdb -c "SELECT version();"
+
+      - name: Connect to Redis
+        run: |
+          sudo apt-get install -y redis-tools
+          redis-cli -h localhost ping
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgres://testuser:testpass@localhost:5432/testdb
+          REDIS_URL: redis://localhost:6379
+        run: |
+          echo "DATABASE_URL is available: $DATABASE_URL"
+          echo "REDIS_URL is available:    $REDIS_URL"
+          echo "Integration tests would run here against real services"

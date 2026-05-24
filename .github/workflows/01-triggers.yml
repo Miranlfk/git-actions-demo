@@ -1,0 +1,117 @@
+name: "01 - Triggers"
+
+# A single workflow can listen to many event types at once.
+# Each job below uses 'if: github.event_name ==' to run only for the
+# relevant trigger, making it easy to see which code fires for which event.
+on:
+  # 1. Push: fires when commits are pushed to matching branches.
+  #    path filters prevent running for doc-only changes.
+  push:
+    branches: [main, "feature/**"]
+    paths-ignore: ["**.md"]
+
+  # 2. Pull request: fires on PR lifecycle events targeting main.
+  #    'synchronize' = new commit pushed to the PR branch.
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+  # 3. Schedule: cron-based, always UTC.
+  #    Tip: always add workflow_dispatch so you can test without waiting.
+  schedule:
+    - cron: "0 8 * * 1"   # Every Monday at 08:00 UTC
+
+  # 4. Manual dispatch: adds a "Run workflow" button in the GitHub UI.
+  #    Supports typed inputs (string, boolean, number, choice).
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "staging"
+        type: choice
+        options: [staging, production]
+      dry_run:
+        description: "Dry-run only (no real changes)"
+        type: boolean
+        default: true
+
+  # 5. Release: fires when a GitHub Release is published.
+  release:
+    types: [published]
+
+# ---------------------------------------------------------------------------
+
+jobs:
+  # Runs on push and pull_request — the standard CI check
+  ci:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements-test.txt
+
+      - name: Run tests
+        run: pytest tests/ -v
+
+      - name: Show trigger info
+        run: |
+          echo "Event:  ${{ github.event_name }}"
+          echo "Ref:    ${{ github.ref_name }}"
+          echo "SHA:    ${{ github.sha }}"
+          echo "Actor:  ${{ github.actor }}"
+          # PR-specific context (empty on push)
+          echo "PR #:   ${{ github.event.pull_request.number }}"
+
+  # Runs only when triggered manually via the GitHub UI or CLI
+  manual-deploy:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print inputs
+        run: |
+          echo "Environment: ${{ inputs.environment }}"
+          echo "Dry run:     ${{ inputs.dry_run }}"
+          echo "Triggered by: ${{ github.actor }}"
+      - name: Simulate deploy
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "[DRY RUN] Would deploy to ${{ inputs.environment }}"
+          else
+            echo "Deploying to ${{ inputs.environment }}..."
+          fi
+
+  # Runs only on the cron schedule
+  scheduled-audit:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Weekly dependency audit
+        run: |
+          echo "Running scheduled audit at $(date -u)"
+          pip install pip-audit
+          pip-audit -r requirements-test.txt || echo "Audit complete (non-zero exit ignored in demo)"
+
+  # Runs only when a GitHub Release is published
+  publish:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show release info
+        run: |
+          echo "Tag:  ${{ github.event.release.tag_name }}"
+          echo "Name: ${{ github.event.release.name }}"
+          echo "Pre:  ${{ github.event.release.prerelease }}"
+      - name: Simulate package publish
+        run: echo "Publishing ${{ github.event.release.tag_name }} to registry..."

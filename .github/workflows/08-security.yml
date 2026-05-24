@@ -1,0 +1,127 @@
+name: "08 - Security"
+
+# Three security topics in one workflow:
+#   1. Secrets      — storage, scoping, masking, safe access patterns
+#   2. GITHUB_TOKEN — minimum-permission model
+#   3. OIDC         — keyless cloud authentication (AWS / GCP / Azure)
+on:
+  workflow_dispatch:
+  push:
+    paths: ["08-security/**"]
+
+# Declare minimum permissions at workflow level.
+# Jobs override this downward — never upward.
+permissions:
+  contents: read
+
+jobs:
+  # ── 1. Secrets ────────────────────────────────────────────────────────────
+  secrets-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pass secrets through env vars — never inline ${{ secrets.X }} in run:
+      # (GitHub masks it either way, but env-var style prevents accidental
+      #  injection if the secret value contains shell metacharacters.)
+      - name: Use a secret via environment variable
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          echo "API key length: ${#API_KEY}"
+          echo "First char:     ${API_KEY:0:1}***  (masked by GitHub in real runs)"
+
+      # Check if an optional secret is configured before using it
+      - name: Check optional secret
+        run: |
+          if [ -z "${{ secrets.OPTIONAL_TOKEN }}" ]; then
+            echo "OPTIONAL_TOKEN not set — skipping optional step"
+          else
+            echo "OPTIONAL_TOKEN is configured"
+          fi
+
+      # GITHUB_TOKEN is always available, no setup needed
+      - name: Use GITHUB_TOKEN
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api /repos/${{ github.repository }} --jq '.full_name'
+
+  # ── 2. GITHUB_TOKEN permissions ───────────────────────────────────────────
+  # GITHUB_TOKEN is a short-lived token auto-created per run.
+  # Explicitly grant only the permissions each job needs.
+  github-token-demo:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write   # needed to post PR comments
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read repo metadata (read permission)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api /repos/${{ github.repository }} \
+            --jq '{name: .name, visibility: .visibility, language: .language}'
+
+      - name: Post a comment on the triggering PR (write permission)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `CI passed for commit \`${context.sha.slice(0,7)}\` 🎉`
+            });
+
+  # ── 3. OIDC — keyless cloud auth ──────────────────────────────────────────
+  # Instead of storing long-lived cloud credentials as secrets, GitHub issues a
+  # short-lived OIDC token. The cloud provider validates it and returns
+  # temporary credentials scoped to the exact repo/branch that made the request.
+  #
+  # Prerequisites (one-time cloud setup):
+  #   AWS   → IAM OIDC Identity Provider + IAM Role with trust policy
+  #   GCP   → Workload Identity Pool + Service Account binding
+  #   Azure → App Registration + Federated Credential
+  oidc-aws:
+    runs-on: ubuntu-latest
+    # id-token: write is mandatory for OIDC — without it GitHub won't issue the JWT
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/GitHubActionsRole
+          aws-region: us-east-1
+          # No AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY stored anywhere
+
+      - name: Use AWS
+        run: |
+          echo "Replace the role ARN above with your own, then uncomment:"
+          echo "# aws s3 ls s3://my-bucket"
+          echo "# aws sts get-caller-identity"
+
+  oidc-gcp:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP via OIDC
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: "projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER"
+          service_account: "my-sa@my-project.iam.gserviceaccount.com"
+
+      - name: Use GCP
+        run: |
+          echo "Replace workload_identity_provider and service_account above, then uncomment:"
+          echo "# gcloud storage ls gs://my-bucket"

@@ -1,0 +1,38 @@
+name: "05 - Reusable Workflow (caller)"
+
+# This workflow calls the reusable deploy workflow for two environments.
+# Secrets are explicitly forwarded with 'secrets: inherit' or named mapping.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy-staging:
+    uses: ./.github/workflows/05-reusable-called.yml
+    with:
+      environment: staging
+      version: ${{ github.sha }}
+      dry_run: true
+    secrets:
+      DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+
+  deploy-production:
+    needs: deploy-staging
+    uses: ./.github/workflows/05-reusable-called.yml
+    with:
+      environment: production
+      version: ${{ github.sha }}
+      dry_run: false
+    # 'inherit' forwards ALL caller secrets to the reusable workflow
+    secrets: inherit
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+    steps:
+      - name: Report deploy URLs from reusable workflow outputs
+        run: |
+          echo "Staging URL:    ${{ needs.deploy-staging.outputs.deploy_url }}"
+          echo "Production URL: ${{ needs.deploy-production.outputs.deploy_url }}"

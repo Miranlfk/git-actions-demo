@@ -1,0 +1,42 @@
+name: "06 - Custom Actions Demo"
+
+# Demonstrates using the two custom actions defined in 06-custom-actions/:
+#   - composite-action: runs multiple steps as a single reusable unit
+#   - javascript-action: runs a Node.js script as an action
+# Also shows referencing a public Marketplace action by tag.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "06-custom-actions/**"
+
+jobs:
+  use-composite-action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run our composite action
+        id: greet
+        uses: ./06-custom-actions/composite-action
+        with:
+          name: "GitHub Actions learner"
+          language: "en"
+
+      - name: Use the composite action output
+        run: echo "Composite action said: ${{ steps.greet.outputs.greeting }}"
+
+  use-javascript-action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run our JavaScript action
+        id: js-action
+        uses: ./06-custom-actions/javascript-action
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          message: "Hello from a JS action!"
+
+      - name: Use JS action output
+        run: echo "JS action result: ${{ steps.js-action.outputs.result }}"

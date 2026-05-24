@@ -1,0 +1,97 @@
+name: "04 - Artifacts and Caching"
+
+# Artifacts  — pass files between jobs or download them after the run.
+# Caching    — reuse installed dependencies across runs to cut install time.
+#
+# Key difference:
+#   Artifact  = produced output you want to keep or share (build, test report)
+#   Cache     = reproducible install inputs you want to skip re-downloading
+on:
+  workflow_dispatch:
+  push:
+    paths: ["src/**", "tests/**", "requirements*.txt"]
+
+jobs:
+  # ── 1. Build and test (produces artifacts, uses cache) ───────────────────
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Cache: saves ~/.cache/pip between runs.
+      # Key includes the OS and a hash of the requirements file so the cache
+      # is automatically invalidated when dependencies change.
+      - name: Cache pip packages
+        id: cache-pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements-test.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Report cache status
+        run: |
+          echo "Cache hit: ${{ steps.cache-pip.outputs.cache-hit }}"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements-test.txt
+
+      - name: Run tests and produce a JUnit XML report
+        run: pytest tests/ -v --junit-xml=reports/junit.xml
+
+      - name: Upload test report artifact
+        # always() ensures the report is uploaded even if tests fail
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ github.run_number }}
+          path: reports/
+          retention-days: 30
+
+      - name: Build a distributable package (simulated)
+        run: |
+          mkdir -p dist
+          echo "version=${{ github.sha }}" > dist/version.txt
+          echo "built=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> dist/version.txt
+          cp src/calculator.py dist/
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ github.run_number }}
+          path: dist/
+          retention-days: 7
+
+  # ── 2. Deploy (consumes the artifact from the previous job) ──────────────
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-${{ github.run_number }}
+          path: release/
+
+      - name: Inspect downloaded artifact
+        run: |
+          echo "=== Release contents ==="
+          ls -la release/
+          cat release/version.txt
+
+      - name: Simulate deploy
+        run: echo "Deploying build ${{ github.run_number }} to staging..."
+
+      # Downloading ALL artifacts from this run into subdirectories by name
+      - name: Download all artifacts (wildcard)
+        uses: actions/download-artifact@v4
+        with:
+          path: all-artifacts/
+
+      - name: Show all artifacts
+        run: find all-artifacts -type f | sort

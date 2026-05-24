@@ -1,0 +1,96 @@
+name: "10 - Monitoring and Notifications"
+
+# Covers:
+#   - Step summaries (written to the GitHub Actions run summary page)
+#   - Debug logging (enable via ACTIONS_STEP_DEBUG secret)
+#   - Annotations (errors/warnings in the Files Changed tab)
+#   - Slack/Teams notifications on failure
+#   - Status badge (see 10-monitoring/README.md)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "10-monitoring/**"
+
+jobs:
+  step-summary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write a job summary
+        run: |
+          # GITHUB_STEP_SUMMARY is a markdown file rendered on the run page
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          ## Build Summary
+
+          | Step       | Status |
+          |------------|--------|
+          | Checkout   | ✅     |
+          | Lint       | ✅     |
+          | Test       | ✅     |
+          | Build      | ✅     |
+
+          **Commit:** `${{ github.sha }}`
+          **Branch:**  `${{ github.ref_name }}`
+          **Actor:**   `${{ github.actor }}`
+          EOF
+
+      - name: Emit workflow commands (annotations)
+        run: |
+          # These special echo patterns create annotations visible in the UI
+          echo "::notice file=README.md,line=1::This is an informational annotation"
+          echo "::warning file=README.md,line=1::This is a warning annotation"
+          # echo "::error file=src/main.js,line=42::This would be an error annotation"
+
+      - name: Debug logging
+        run: |
+          # Enable by setting secret ACTIONS_STEP_DEBUG = true in repo settings
+          echo "Debug mode: ${{ secrets.ACTIONS_STEP_DEBUG == 'true' }}"
+          echo "::debug::This message only appears when debug logging is enabled"
+
+  notify-on-failure:
+    runs-on: ubuntu-latest
+    needs: step-summary
+    # This job only runs if the previous job failed
+    if: failure()
+    steps:
+      - name: Send Slack notification
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK" ]; then
+            echo "SLACK_WEBHOOK_URL not configured — skipping notification"
+            exit 0
+          fi
+          curl -s -X POST "$SLACK_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "text": "❌ Workflow *${{ github.workflow }}* failed on `${{ github.ref_name }}`",
+              "attachments": [{
+                "color": "danger",
+                "fields": [
+                  {"title": "Repository", "value": "${{ github.repository }}", "short": true},
+                  {"title": "Actor",      "value": "${{ github.actor }}",      "short": true},
+                  {"title": "Run URL",    "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}
+                ]
+              }]
+            }'
+
+  notify-on-success:
+    runs-on: ubuntu-latest
+    needs: step-summary
+    if: success()
+    steps:
+      - name: Post success summary comment on commit
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: commit } = await github.rest.repos.getCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha
+            });
+            console.log(`Build succeeded for commit: ${context.sha.slice(0,7)}`);
+            // Could post a commit comment, update a Slack message, etc.
