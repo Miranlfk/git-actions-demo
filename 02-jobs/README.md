@@ -10,7 +10,7 @@ Jobs are the top-level units of work in a workflow. They run on fresh, isolated 
 
 | Job | Pattern | What it does |
 |-----|---------|-------------|
-| `matrix-test` | Matrix strategy | Runs pytest across 3 OS × 2 Python versions (5 jobs) |
+| `matrix-test` | Matrix strategy | Runs pytest across 2 Ubuntu variants × 2 Python versions (4 jobs) |
 | `conditions-demo` | `if:` conditions | Shows step-level and job-level conditions activating |
 | `unit-tests` | Fan-out (parallel) | Runs pytest, emits a job output |
 | `lint` | Fan-out (parallel) | Runs pyflakes, emits a job output |
@@ -49,19 +49,17 @@ gh workflow run 02-jobs.yml
 
 ### Matrix jobs (`matrix-test`)
 
-After triggering, open the run and expand the job list. You will see **5 separate jobs** all named with the pattern `Test / <os> / py<version>`:
+After triggering, open the run and expand the job list. You will see **4 separate jobs** all named with the pattern `Test / <os> / py<version>`:
 
 ```
 Test / ubuntu-latest  / py3.11   ✅
 Test / ubuntu-latest  / py3.12   ✅
-Test / windows-latest / py3.12   ✅   ← py3.11 excluded
-Test / macos-latest   / py3.11   ✅
-Test / macos-latest   / py3.12   ✅
+Test / ubuntu-22.04   / py3.11   ✅
+Test / ubuntu-22.04   / py3.12   ✅
 ```
 
-- `fail-fast: false` means all 5 continue even if one fails. Remove it and break a test to see early-exit behaviour.
-- The `exclude:` entry removes `windows-latest + py3.11`. Confirm it is absent from the list.
-- Each job prints `OS: ubuntu-latest` and `Python: 3.12` at the end of its log so you can verify the matrix values are correct.
+- `fail-fast: false` means all 4 continue even if one fails. Remove it and break a test to see early-exit behaviour.
+- Each job prints its `OS` and `Python` version at the end of its log so you can verify the matrix values are correct.
 
 ### Conditions (`conditions-demo`)
 
@@ -114,8 +112,8 @@ Go to the Actions tab — "push 1" run is cancelled automatically.
 
 | Concept | Where to see it |
 |---------|----------------|
-| `fail-fast: false` | Matrix — all legs finish even after one fails |
-| `exclude:` in matrix | `windows-latest + py3.11` is absent from the job list |
+| `fail-fast: false` | Matrix — all 4 legs finish even after one fails |
+| Matrix OS list | Only `ubuntu-latest` and `ubuntu-22.04` appear in the job list |
 | `if:` on a step | `conditions-demo` — different steps active per trigger type |
 | `always()` | `report` job always runs, `conditions-demo` last step always runs |
 | Job `outputs:` | `unit-tests` emits `result=passed`; `report` reads it via `needs.unit-tests.outputs.result` |
