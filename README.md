@@ -19,7 +19,8 @@ Some workflows require optional one-time setup (secrets, environments). Each sec
 ## Repository structure
 
 ```
-.github/workflows/     ← 11 runnable workflow files
+.github/workflows/     ← 13 runnable workflow files
+beginner-demo/         ← Start-here CI/CD walkthrough (publish to GHCR + deploy)
 01-triggers/           ← Section README (concept notes + run instructions)
 02-jobs/
 03-environment-variables/
@@ -33,6 +34,16 @@ Some workflows require optional one-time setup (secrets, environments). Each sec
 src/                   ← Sample Python app used by CI workflows
 tests/                 ← pytest suite (5 tests)
 requirements-test.txt  ← pytest dependency
+```
+
+---
+
+## Start here: Beginner CI/CD walkthrough
+
+New to GitHub Actions? Start with **[beginner-demo/](./beginner-demo/)** for a complete end-to-end pipeline: one workflow builds and publishes a Docker image of the sample app to GitHub Container Registry, and a separate workflow auto-triggers, pulls the image, and runs it. Real artifact, real deploy, no extra setup — uses only the built-in `GITHUB_TOKEN`.
+
+```bash
+gh workflow run beginner-ci.yml
 ```
 
 ---

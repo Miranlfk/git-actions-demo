@@ -1,0 +1,81 @@
+name: "Beginner CI - Build and Publish"
+
+# CI pipeline for the beginner-demo:
+#   1. Run the test suite against src/calculator.py
+#   2. Build a Docker image that packages the app
+#   3. Publish the image to GitHub Container Registry (GHCR)
+#
+# The CD pipeline (beginner-cd.yml) listens for this workflow to finish
+# and then deploys the image it just published.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "beginner-demo/**"
+      - ".github/workflows/beginner-ci.yml"
+  workflow_dispatch:
+
+jobs:
+  # ── 1. Run the existing pytest suite ─────────────────────────────────────
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: pip install -r requirements-test.txt
+
+      - name: Run pytest
+        run: pytest tests/ -v
+
+  # ── 2. Build the Docker image and publish it to GHCR ─────────────────────
+  build-and-publish:
+    runs-on: ubuntu-latest
+    needs: test
+
+    # GITHUB_TOKEN needs `packages: write` to push images to GHCR.
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # GHCR image paths must be lowercase. github.repository keeps the
+      # original casing, so we normalise it here once and reuse the value.
+      - name: Compute lowercase image name
+        id: img
+        run: |
+          repo_lc=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "name=ghcr.io/${repo_lc}/calculator" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -f beginner-demo/Dockerfile \
+            -t ${{ steps.img.outputs.name }}:${{ github.sha }} \
+            -t ${{ steps.img.outputs.name }}:latest \
+            .
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ steps.img.outputs.name }}:${{ github.sha }}
+          docker push ${{ steps.img.outputs.name }}:latest
+
+      - name: Summary
+        run: |
+          echo "Published ${{ steps.img.outputs.name }}:${{ github.sha }}"
+          echo "Published ${{ steps.img.outputs.name }}:latest"
