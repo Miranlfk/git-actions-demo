@@ -9,7 +9,7 @@ name: "Beginner CI - Build and Publish"
 # and then deploys the image it just published.
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - "src/**"
       - "tests/**"
