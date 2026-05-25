@@ -16,6 +16,15 @@ on:
       - "beginner-demo/**"
       - ".github/workflows/beginner-ci.yml"
   workflow_dispatch:
+    inputs:
+      demo_mode:
+        description: 'Build mode — "vulnerable" swaps in python:3.8 to produce Trivy HIGH/CRITICAL findings'
+        required: false
+        default: clean
+        type: choice
+        options:
+          - clean
+          - vulnerable
 
 # Prevent two releases being created at the same time on master.
 # cancel-in-progress: false queues new runs rather than cancelling a
@@ -69,7 +78,7 @@ jobs:
             next="v0.1.0"
           else
             IFS='.' read -r major minor patch <<< "${latest#v}"
-            next="v${major}.${minor}.$((patch + 1))"
+            next="v${major}.${minor + 1}.0"
           fi
           echo "Creating release ${next}..."
           gh release create "${next}" \
@@ -97,6 +106,19 @@ jobs:
           repo_lc=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           echo "name=ghcr.io/${repo_lc}/calculator" >> "$GITHUB_OUTPUT"
 
+      # demo_mode=vulnerable uses python:3.8 (many known CVEs) so Trivy fails.
+      # Push-triggered runs always default to clean (inputs is empty on push).
+      - name: Select base image
+        id: base
+        run: |
+          if [ "${{ inputs.demo_mode }}" = "vulnerable" ]; then
+            echo "python_version=3.8" >> "$GITHUB_OUTPUT"
+            echo "Demo mode: using python:3.8 (vulnerable)"
+          else
+            echo "python_version=3.12-slim" >> "$GITHUB_OUTPUT"
+            echo "Clean mode: using python:3.12-slim"
+          fi
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -108,9 +130,21 @@ jobs:
         run: |
           docker build \
             -f beginner-demo/Dockerfile \
+            --build-arg PYTHON_VERSION=${{ steps.base.outputs.python_version }} \
             -t ${{ steps.img.outputs.name }}:${{ needs.release.outputs.tag }} \
             -t ${{ steps.img.outputs.name }}:latest \
             .
+
+      # Scan the locally-built image before pushing. exit-code: 1 fails the step
+      # (and blocks the push) when HIGH or CRITICAL vulnerabilities are found.
+      # To see this gate in action, re-run manually with demo_mode=vulnerable.
+      - name: Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.img.outputs.name }}:${{ needs.release.outputs.tag }}
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
 
       - name: Push Docker image
         run: |

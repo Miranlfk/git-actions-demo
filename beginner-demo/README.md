@@ -58,9 +58,9 @@ The two workflows are wired together by the [`workflow_run`](https://docs.github
 |-----|-------|-------------|
 | `test` | — | Sets up Python 3.12, installs `pytest`, runs the test suite in `tests/` |
 | `release` | `test` | Finds the latest `vX.Y.Z` git tag, increments the patch version, creates a GitHub Release with auto-generated notes |
-| `build-and-publish` | `release` | Logs in to `ghcr.io`, builds the Docker image, pushes two tags: the release version (e.g. `:v0.1.3`) and `:latest` |
+| `build-and-publish` | `release` | Selects the base image (clean vs vulnerable), logs in to `ghcr.io`, builds, **runs Trivy scan**, pushes only if scan passes |
 
-A failing test blocks the release; a failed release blocks the image publish.
+A failing test blocks the release; a failed scan blocks the push.
 
 ### CD — `beginner-cd.yml`
 
@@ -69,6 +69,39 @@ A failing test blocks the release; a failed release blocks the image publish.
 | `deploy` | Logs in to `ghcr.io`, pulls `calculator:latest`, runs the container, prints the calculator output |
 
 The job is guarded by `if: github.event.workflow_run.conclusion == 'success'` — a failed CI run will not trigger a deploy.
+
+---
+
+## Trivy security scan
+
+The `build-and-publish` job runs a **Trivy vulnerability scan** on the Docker image immediately after it is built — before any push to GHCR. If Trivy finds `HIGH` or `CRITICAL` CVEs the step exits non-zero, the push steps are skipped, and the workflow fails.
+
+```
+build image → Trivy scan ─── PASS ──▶ push to GHCR
+                         └── FAIL ──▶ workflow fails, nothing pushed
+```
+
+### Demo the gate
+
+The `workflow_dispatch` trigger exposes a `demo_mode` input:
+
+| `demo_mode` | Base image | Expected scan result |
+|-------------|-----------|---------------------|
+| `clean` (default) | `python:3.12-slim` | Pass — few or no HIGH/CRITICAL CVEs |
+| `vulnerable` | `python:3.8` | Fail — many HIGH/CRITICAL CVEs in the full Python 3.8 image |
+
+**To demo a failing scan:**
+
+1. **Actions** tab → **"Beginner CI - Build and Publish"** → **Run workflow**
+2. Set `demo_mode` to **`vulnerable`** → **Run workflow**
+3. Watch `build-and-publish` → **Trivy vulnerability scan** print a table of CVEs and fail
+
+**Via CLI:**
+```bash
+gh workflow run beginner-ci.yml -f demo_mode=vulnerable
+```
+
+A push to `master` always runs in `clean` mode (the `inputs` context is empty on push events, so the `if [ ... = "vulnerable" ]` condition is false).
 
 ---
 
@@ -195,6 +228,10 @@ Both behaviours are intentional — they prevent a malicious PR from rewriting y
 | Auto-incrementing semver | `git tag --sort=-v:refname` + shell arithmetic finds and bumps the latest `vX.Y.Z` tag |
 | `gh release create` | GitHub CLI creates the release and tag in one command; `--generate-notes` adds commit-based notes automatically |
 | `concurrency:` with `cancel-in-progress: false` | Queues rapid pushes rather than cancelling a half-created release |
+| Trivy scan with `exit-code: 1` | Fails the step (and blocks the push) on HIGH/CRITICAL CVEs |
+| `--build-arg PYTHON_VERSION` | Dockerfile ARG lets the workflow swap the base image without editing the file |
+| `workflow_dispatch` inputs with `type: choice` | Exposes a dropdown in the GitHub UI for the demo toggle |
+| `inputs.demo_mode` empty on push | `if [ "${{ inputs.demo_mode }}" = "vulnerable" ]` is false on push events — safe default |
 | `workflow_run` trigger | CD workflow's `on:` block — auto-fires when CI completes |
 | Conditional based on upstream result | `if: github.event.workflow_run.conclusion == 'success'` in CD |
 | Lowercase image name | `tr '[:upper:]' '[:lower:]'` step in both workflows |
