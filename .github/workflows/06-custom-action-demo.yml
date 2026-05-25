@@ -25,7 +25,8 @@ jobs:
           language: "en"
 
       - name: Use the composite action output
-        run: echo "Composite action said: ${{ steps.greet.outputs.greeting }}"
+        run: |
+          echo "Composite action said: ${{ steps.greet.outputs.greeting }}"
 
   use-javascript-action:
     runs-on: ubuntu-latest
@@ -40,7 +41,8 @@ jobs:
           message: "Hello from a JS action!"
 
       - name: Use JS action output
-        run: echo "JS action result: ${{ steps.js-action.outputs.result }}"
+        run: |
+          echo "JS action result: ${{ steps.js-action.outputs.result }}"
 
   use-docker-action:
     runs-on: ubuntu-latest   # Docker actions only work on Linux runners
@@ -55,4 +57,5 @@ jobs:
           language: "es"
 
       - name: Use Docker action output
-        run: echo "Docker action said ${{ steps.docker-action.outputs.greeting }}"
+        run: |
+          echo "Docker action said ${{ steps.docker-action.outputs.greeting }}"

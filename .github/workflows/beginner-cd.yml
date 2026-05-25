@@ -41,7 +41,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pull image from GHCR
-        run: docker pull ${{ steps.img.outputs.name }}
+        run: |
+          docker pull ${{ steps.img.outputs.name }}
 
       - name: Deploy (run the container)
         run: |
@@ -49,4 +50,5 @@ jobs:
           docker run --rm ${{ steps.img.outputs.name }}
 
       - name: Deployment summary
-        run: echo "Deployed ${{ steps.img.outputs.name }} successfully"
+        run: |
+          echo "Deployed ${{ steps.img.outputs.name }} successfully"
