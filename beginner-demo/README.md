@@ -27,7 +27,7 @@ Two workflows. One trigger between them. Nothing simulated.
 │                                                             │
 │  deploy                                                     │
 │    │                                                        │
-│  docker pull :latest ──▶ docker run ──▶ verify output      │
+│  docker pull :v0.1.0 ──▶ docker run ──▶ verify output      │
 └─────────────────────────────────────────────────────────────┘
 
 CI triggers on: push to master (src/tests/beginner-demo changes)
