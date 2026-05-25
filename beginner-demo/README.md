@@ -13,17 +13,26 @@ Two workflows. One trigger between them. Nothing simulated.
 ## What this demo does
 
 ```
-┌──────────────────────────┐         ┌──────────────────────────┐
-│  Beginner CI             │         │  Beginner CD             │
-│  Build and Publish       │ ──────▶ │  Deploy from GHCR        │
-│                          │workflow │                          │
-│  1. Run pytest           │  _run   │  1. Pull image from GHCR │
-│  2. Build Docker image   │ trigger │  2. docker run image     │
-│  3. Push image to GHCR   │         │  3. Verify output        │
-└──────────────────────────┘         └──────────────────────────┘
-        triggers on:                       triggers on:
-        push to main                       CI workflow completed
-        workflow_dispatch                  workflow_dispatch
+┌─────────────────────────────────────────────────────────────┐
+│  Beginner CI — Build and Publish                            │
+│                                                             │
+│  test ──▶ release ──▶ build-and-publish                     │
+│    │          │               │                             │
+│  pytest   create GitHub    docker build                     │
+│           Release v0.1.0   docker push :v0.1.0 + :latest   │
+└────────────────────────────────┬────────────────────────────┘
+                                 │ workflow_run trigger
+┌────────────────────────────────▼────────────────────────────┐
+│  Beginner CD — Deploy from GHCR                             │
+│                                                             │
+│  deploy                                                     │
+│    │                                                        │
+│  docker pull :latest ──▶ docker run ──▶ verify output      │
+└─────────────────────────────────────────────────────────────┘
+
+CI triggers on: push to master (src/tests/beginner-demo changes)
+CD triggers on: CI workflow completed (workflow_run)
+Both accept: workflow_dispatch for manual runs
 ```
 
 The two workflows are wired together by the [`workflow_run`](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#workflow_run) event: when CI finishes successfully, CD starts automatically. No shared secrets, no polling — GitHub fires the event itself.
@@ -45,12 +54,13 @@ The two workflows are wired together by the [`workflow_run`](https://docs.github
 
 ### CI — `beginner-ci.yml`
 
-| Job | What it does |
-|-----|-------------|
-| `test` | Sets up Python 3.12, installs `pytest`, runs the existing test suite in `tests/` |
-| `build-and-publish` | Logs in to `ghcr.io` with `GITHUB_TOKEN`, builds the Docker image, pushes two tags: `:<sha>` and `:latest` |
+| Job | Needs | What it does |
+|-----|-------|-------------|
+| `test` | — | Sets up Python 3.12, installs `pytest`, runs the test suite in `tests/` |
+| `release` | `test` | Finds the latest `vX.Y.Z` git tag, increments the patch version, creates a GitHub Release with auto-generated notes |
+| `build-and-publish` | `release` | Logs in to `ghcr.io`, builds the Docker image, pushes two tags: the release version (e.g. `:v0.1.3`) and `:latest` |
 
-`build-and-publish` needs `test` — a failing test blocks the publish.
+A failing test blocks the release; a failed release blocks the image publish.
 
 ### CD — `beginner-cd.yml`
 
@@ -148,16 +158,17 @@ Both behaviours are intentional — they prevent a malicious PR from rewriting y
 
 ### In the CI run
 
-- **`test` job log:** `5 passed` — the same suite that section 04 uses.
-- **`build-and-publish` job → Compute lowercase image name:** prints the final image name. GHCR requires lowercase, so `Miranlfk/git-actions-demo` becomes `miranlfk/git-actions-demo`.
-- **Login step:** `Login Succeeded`.
-- **Build step:** Docker prints layer hashes as it builds.
-- **Push step:** Each layer uploads, then the manifest. Two tags pushed: `:<sha>` and `:latest`.
+- **`test` job:** `5 passed` — the same suite that section 04 uses.
+- **`release` job → Create GitHub Release:** prints `Creating release v0.1.0...` (or the next incremented patch). The step outputs the tag name which is passed to the next job.
+- **Releases tab** on the repo: a new release appears with auto-generated notes listing the commits since the last release.
+- **`build-and-publish` job → Compute lowercase image name:** GHCR requires lowercase, so `Miranlfk/git-actions-demo` becomes `miranlfk/git-actions-demo`.
+- **Push step:** two tags pushed — `:v0.1.0` (or whatever the release is) and `:latest`.
 
 ### On the repo
 
-- **Packages sidebar** on the repo home page shows `calculator`.
-- Click it → see all tags, pull command, total size.
+- **Releases sidebar** shows the new release with its semver tag.
+- **Packages sidebar** shows `calculator` with both version-tagged and `latest` images.
+- Click a package tag to see the exact image digest, size, and pull command.
 
 ### In the CD run
 
@@ -177,10 +188,15 @@ Both behaviours are intentional — they prevent a malicious PR from rewriting y
 | Concept | Where to see it |
 |---------|----------------|
 | `GITHUB_TOKEN` for GHCR auth | Login step in both workflows |
-| `permissions: packages: write` | CI's `build-and-publish` job — required to push |
+| `permissions: contents: write` | CI's `release` job — required to create tags and releases |
+| `permissions: packages: write` | CI's `build-and-publish` job — required to push images |
 | `permissions: packages: read` | CD's `deploy` job — only needs to pull |
+| Job outputs | `release` job exposes `tag:` output; `build-and-publish` reads it via `needs.release.outputs.tag` |
+| Auto-incrementing semver | `git tag --sort=-v:refname` + shell arithmetic finds and bumps the latest `vX.Y.Z` tag |
+| `gh release create` | GitHub CLI creates the release and tag in one command; `--generate-notes` adds commit-based notes automatically |
+| `concurrency:` with `cancel-in-progress: false` | Queues rapid pushes rather than cancelling a half-created release |
 | `workflow_run` trigger | CD workflow's `on:` block — auto-fires when CI completes |
 | Conditional based on upstream result | `if: github.event.workflow_run.conclusion == 'success'` in CD |
 | Lowercase image name | `tr '[:upper:]' '[:lower:]'` step in both workflows |
-| Two tags per push | `:<sha>` for traceability, `:latest` for the deploy target |
+| Two tags per push | `:v0.1.x` ties the image to an exact release; `:latest` is what CD deploys |
 | Real artifact, real deploy | `docker pull` + `docker run` proves the image works |
