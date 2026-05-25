@@ -78,7 +78,7 @@ jobs:
             next="v0.1.0"
           else
             IFS='.' read -r major minor patch <<< "${latest#v}"
-            next="v${major}.${minor + 1}.0"
+            next="v${major}.$((minor + 1)).0"
           fi
           echo "Creating release ${next}..."
           gh release create "${next}" \
