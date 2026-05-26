@@ -2,7 +2,7 @@
 
 This workflow covers three security topics: how secrets are stored and accessed safely, how to lock down `GITHUB_TOKEN` to minimum permissions, and how to authenticate to cloud providers without storing any long-lived credentials.
 
-**Workflow file:** [`.github/workflows/08-security.yml`](../.github/workflows/08-security.yml)
+**Workflow file:** [`.github/workflows/08-security.yml`](../../.github/workflows/08-security.yml)
 
 ---
 
@@ -21,11 +21,11 @@ This workflow covers three security topics: how secrets are stored and accessed 
 
 ### Trigger on push
 
-The workflow fires on any push that modifies a file under `08-security/`:
+The workflow fires on any push that modifies a file under `advanced/08-security/`:
 
 ```bash
-echo " " >> 08-security/README.md
-git add 08-security/README.md
+echo " " >> advanced/08-security/README.md
+git add advanced/08-security/README.md
 git commit -m "test 08 security"
 git push
 ```
@@ -100,7 +100,7 @@ permissions:
 
 This step only runs on `pull_request` events (`if: github.event_name == 'pull_request'`). Trigger the workflow manually or via push and this step will be **skipped**. To see it run:
 
-1. Open a pull request targeting `main`.
+1. Open a pull request targeting `main` or `master`.
 2. The workflow runs automatically — the `github-token-demo` job fires and posts a comment on the PR:
    ```
    CI passed for commit `abc1234` 🎉

@@ -2,7 +2,7 @@
 
 GitHub Environments add protection rules (required reviewers, wait timers, branch restrictions) and scoped secrets to your deployment jobs. This workflow models a realistic build → staging → production promotion.
 
-**Workflow file:** [`.github/workflows/07-deployment.yml`](../.github/workflows/07-deployment.yml)
+**Workflow file:** [`.github/workflows/07-deployment.yml`](../../.github/workflows/07-deployment.yml)
 
 ---
 
@@ -20,13 +20,13 @@ GitHub Environments add protection rules (required reviewers, wait timers, branc
 
 ## How to run
 
-### Trigger on push to main
+### Trigger on push to main/master
 
-The workflow fires on any push to `main`:
+The workflow fires on any push to `main` or `master`:
 
 ```bash
 git commit --allow-empty -m "test 07 deployment"
-git push origin main
+git push origin master
 ```
 
 ### Trigger manually
@@ -63,7 +63,7 @@ Inside each environment, add secrets that are only available to that environment
 
 ### Step 3 — Run with the protection gate
 
-Push to `main` or run manually. Watch the workflow graph:
+Push to `main`/`master` or run manually. Watch the workflow graph:
 
 ```
 build → deploy-staging → deploy-production (waiting for approval)

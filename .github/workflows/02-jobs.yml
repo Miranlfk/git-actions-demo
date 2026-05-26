@@ -94,9 +94,9 @@ jobs:
       - name: Always runs
         run: echo "This step always runs"
 
-      - name: Only on push to main
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: echo "Pushed directly to main"
+      - name: Only on push to main/master
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        run: echo "Pushed directly to main/master"
 
       - name: Only on manual dispatch
         if: github.event_name == 'workflow_dispatch'

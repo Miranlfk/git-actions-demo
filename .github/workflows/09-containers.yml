@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - "09-containers/**"
+      - "advanced/09-containers/**"
 
 jobs:
   # Pattern 1: Run the whole job inside a container

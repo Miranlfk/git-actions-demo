@@ -7,7 +7,7 @@ Custom actions are reusable units that encapsulate logic into a single step. Thi
 ## Files
 
 ```
-06-custom-actions/
+advanced/06-custom-actions/
 ├── composite-action/
 │   └── action.yml          ← Composite action (shell steps, no extra runtime)
 ├── javascript-action/
@@ -20,7 +20,7 @@ Custom actions are reusable units that encapsulate logic into a single step. Thi
 └── README.md
 ```
 
-**Demo workflow:** [`.github/workflows/06-custom-action-demo.yml`](../.github/workflows/06-custom-action-demo.yml)
+**Demo workflow:** [`.github/workflows/06-custom-action-demo.yml`](../../.github/workflows/06-custom-action-demo.yml)
 
 ---
 
@@ -28,12 +28,12 @@ Custom actions are reusable units that encapsulate logic into a single step. Thi
 
 ### Trigger on push
 
-The workflow fires on any push that modifies any file under `06-custom-actions/`:
+The workflow fires on any push that modifies any file under `advanced/06-custom-actions/`:
 
 ```bash
 # Edit the composite action to trigger
-echo "# comment" >> 06-custom-actions/composite-action/action.yml
-git add 06-custom-actions/
+echo "# comment" >> advanced/06-custom-actions/composite-action/action.yml
+git add advanced/06-custom-actions/
 git commit -m "test 06 custom actions"
 git push
 ```
@@ -55,10 +55,10 @@ gh workflow run 06-custom-action-demo.yml
 
 ### `use-composite-action` job
 
-The workflow calls the local composite action at `./06-custom-actions/composite-action`:
+The workflow calls the local composite action at `./advanced/06-custom-actions/composite-action`:
 
 ```yaml
-- uses: ./06-custom-actions/composite-action
+- uses: ./advanced/06-custom-actions/composite-action
   with:
     name: "GitHub Actions learner"
     language: "en"
@@ -84,10 +84,10 @@ Try changing the `language:` input to `es` or `fr` and re-running:
 
 ### `use-javascript-action` job
 
-The workflow calls the JavaScript action at `./06-custom-actions/javascript-action`:
+The workflow calls the JavaScript action at `./advanced/06-custom-actions/javascript-action`:
 
 ```yaml
-- uses: ./06-custom-actions/javascript-action
+- uses: ./advanced/06-custom-actions/javascript-action
   with:
     repo-token: ${{ secrets.GITHUB_TOKEN }}
     message: "Hello from a JS action!"
@@ -114,10 +114,10 @@ The JS action reads its inputs from environment variables (the standard mechanis
 
 ### `use-docker-action` job
 
-The workflow calls the Docker action at `./06-custom-actions/docker-action`:
+The workflow calls the Docker action at `./advanced/06-custom-actions/docker-action`:
 
 ```yaml
-- uses: ./06-custom-actions/docker-action
+- uses: ./advanced/06-custom-actions/docker-action
   with:
     name: "GitHub Actions learner"
     language: "es"
@@ -125,7 +125,7 @@ The workflow calls the Docker action at `./06-custom-actions/docker-action`:
 
 Open the log:
 
-**Step: "Build /06-custom-actions/docker-action/Dockerfile"** (auto-injected by the runner)
+**Step: "Build /advanced/06-custom-actions/docker-action/Dockerfile"** (auto-injected by the runner)
 - The runner builds the image from the local Dockerfile on the first run. Subsequent runs on the same runner reuse the cached image.
 
 **Step: "Run our Docker action"**
@@ -147,7 +147,7 @@ The action runs inside an Alpine container. Inputs are passed positionally via `
 ## Understanding local action paths
 
 ```yaml
-uses: ./06-custom-actions/composite-action
+uses: ./advanced/06-custom-actions/composite-action
 ```
 
 The path is always **relative to the repository root**, regardless of where the workflow file lives. The leading `./` is mandatory — without it GitHub tries to resolve it as `owner/repo@ref`.

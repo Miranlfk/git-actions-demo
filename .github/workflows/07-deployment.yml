@@ -3,13 +3,13 @@ name: "07 - Deployment with Environments"
 # Environments add protection rules to deployments:
 #   - Required reviewers (manual approval gate)
 #   - Wait timer (delay before deploy starts)
-#   - Branch restrictions (only deploy from main)
+#   - Branch restrictions (only deploy from main/master)
 #   - Environment secrets (credentials scoped to that environment)
 #
 # Create environments in: Settings > Environments
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:

@@ -2,7 +2,7 @@
 
 Jobs are the top-level units of work in a workflow. They run on fresh, isolated runners and are parallel by default. This workflow demonstrates four major job patterns together.
 
-**Workflow file:** [`.github/workflows/02-jobs.yml`](../.github/workflows/02-jobs.yml)
+**Workflow file:** [`.github/workflows/02-jobs.yml`](../../.github/workflows/02-jobs.yml)
 
 ---
 
@@ -92,7 +92,7 @@ Open the `conditions-demo` job log. Step outcomes change depending on how you tr
 | Step | Fires on push | Fires on manual |
 |------|:---:|:---:|
 | Always runs | ✅ | ✅ |
-| Only on push to main | ✅ (if branch is main) | ❌ skipped |
+| Only on push to main/master | ✅ (if branch is main/master) | ❌ skipped |
 | Only on manual dispatch | ❌ skipped | ✅ |
 | Runs only if output == 'ok' | ✅ | ✅ |
 | Step with timeout-minutes | ✅ | ✅ |

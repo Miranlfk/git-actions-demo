@@ -1,6 +1,6 @@
 name: "06 - Custom Actions Demo"
 
-# Demonstrates using the three custom actions defined in 06-custom-actions/:
+# Demonstrates using the three custom actions defined in advanced/06-custom-actions/:
 #   - composite-action:  runs multiple steps as a single reusable unit
 #   - javascript-action: runs a Node.js script as an action
 #   - docker-action:     runs inside a container built from a local Dockerfile
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - "06-custom-actions/**"
+      - "advanced/06-custom-actions/**"
 
 jobs:
   use-composite-action:
@@ -19,7 +19,7 @@ jobs:
 
       - name: Run our composite action
         id: greet
-        uses: ./06-custom-actions/composite-action
+        uses: ./advanced/06-custom-actions/composite-action
         with:
           name: "GitHub Actions learner"
           language: "en"
@@ -35,7 +35,7 @@ jobs:
 
       - name: Run our JavaScript action
         id: js-action
-        uses: ./06-custom-actions/javascript-action
+        uses: ./advanced/06-custom-actions/javascript-action
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           message: "Hello from a JS action!"
@@ -51,7 +51,7 @@ jobs:
 
       - name: Run our Docker action
         id: docker-action
-        uses: ./06-custom-actions/docker-action
+        uses: ./advanced/06-custom-actions/docker-action
         with:
           name: "GitHub Actions learner"
           language: "es"

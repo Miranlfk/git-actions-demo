@@ -21,16 +21,17 @@ Some workflows require optional one-time setup (secrets, environments). Each sec
 ```
 .github/workflows/     ← 13 runnable workflow files
 beginner-demo/         ← Start-here CI/CD walkthrough (publish to GHCR + deploy)
-01-triggers/           ← Section README (concept notes + run instructions)
-02-jobs/
-03-environment-variables/
-04-artifacts-and-caching/
-05-reusable-workflows/
-06-custom-actions/     ← README + composite-action/ + javascript-action/ + docker-action/
-07-deployment/
-08-security/
-09-containers/
-10-monitoring/
+advanced/              ← Advanced topics, one section per directory
+  01-triggers/           ← Section README (concept notes + run instructions)
+  02-jobs/
+  03-environment-variables/
+  04-artifacts-and-caching/
+  05-reusable-workflows/
+  06-custom-actions/     ← README + composite-action/ + javascript-action/ + docker-action/
+  07-deployment/
+  08-security/
+  09-containers/
+  10-monitoring/
 src/                   ← Sample Python app used by CI workflows
 tests/                 ← pytest suite (5 tests)
 requirements-test.txt  ← pytest dependency
@@ -48,17 +49,17 @@ gh workflow run beginner-ci.yml
 
 ---
 
-## Sections and how to run each workflow
+## Advanced sections and how to run each workflow
 
-Each section has a detailed README. The table below summarises the fastest way to trigger each workflow.
+Each section under [`advanced/`](./advanced/) has a detailed README. The table below summarises the fastest way to trigger each workflow.
 
-### [01 · Triggers](./01-triggers/)
+### [01 · Triggers](./advanced/01-triggers/)
 **Workflow:** [`01-triggers.yml`](.github/workflows/01-triggers.yml)
 
 | Trigger | How |
 |---------|-----|
-| Push (`ci` job) | Push any non-`.md` change to `main` or `feature/**` |
-| Pull request (`ci` job) | Open a PR targeting `main` |
+| Push (`ci` job) | Push any non-`.md` change to `main`, `master`, or `feature/**` |
+| Pull request (`ci` job) | Open a PR targeting `main` or `master` |
 | Manual (`manual-deploy` job) | Actions tab → "01 - Triggers" → Run workflow → pick environment + dry_run |
 | Release (`publish` job) | Create and publish a GitHub Release |
 | Schedule (`scheduled-audit` job) | Fires automatically every Monday 08:00 UTC |
@@ -71,7 +72,7 @@ gh workflow run 01-triggers.yml -f environment=staging -f dry_run=true
 
 ---
 
-### [02 · Jobs](./02-jobs/)
+### [02 · Jobs](./advanced/02-jobs/)
 **Workflow:** [`02-jobs.yml`](.github/workflows/02-jobs.yml)
 
 Triggers on push to `src/**` or `tests/**`, or manually.
@@ -84,10 +85,10 @@ What runs: a 4-job matrix (ubuntu-latest + ubuntu-22.04 × 2 Python versions), a
 
 ---
 
-### [03 · Variables and Expressions](./03-environment-variables/)
+### [03 · Variables and Expressions](./advanced/03-environment-variables/)
 **Workflow:** [`03-variables-expressions.yml`](.github/workflows/03-variables-expressions.yml)
 
-Triggers on push to `03-environment-variables/**`, or manually.
+Triggers on push to `advanced/03-environment-variables/**`, or manually.
 
 ```bash
 gh workflow run 03-variables-expressions.yml
@@ -97,7 +98,7 @@ What runs: three jobs demonstrating variable scopes, all major contexts, and exp
 
 ---
 
-### [04 · Artifacts and Caching](./04-artifacts-and-caching/)
+### [04 · Artifacts and Caching](./advanced/04-artifacts-and-caching/)
 **Workflow:** [`04-artifacts-caching.yml`](.github/workflows/04-artifacts-caching.yml)
 
 Triggers on push to `src/**`, `tests/**`, or `requirements*.txt`, or manually.
@@ -110,7 +111,7 @@ What runs: `build-and-test` (caches pip, runs pytest, uploads test report + buil
 
 ---
 
-### [05 · Reusable Workflows](./05-reusable-workflows/)
+### [05 · Reusable Workflows](./advanced/05-reusable-workflows/)
 **Caller workflow:** [`05-reusable-caller.yml`](.github/workflows/05-reusable-caller.yml)  
 **Called workflow:** [`05-reusable-called.yml`](.github/workflows/05-reusable-called.yml) ← cannot be triggered directly
 
@@ -125,10 +126,10 @@ What runs: the caller invokes the reusable deploy workflow twice — once for st
 
 ---
 
-### [06 · Custom Actions](./06-custom-actions/)
+### [06 · Custom Actions](./advanced/06-custom-actions/)
 **Workflow:** [`06-custom-action-demo.yml`](.github/workflows/06-custom-action-demo.yml)
 
-Triggers on push to `06-custom-actions/**`, or manually.
+Triggers on push to `advanced/06-custom-actions/**`, or manually.
 
 ```bash
 gh workflow run 06-custom-action-demo.yml
@@ -138,10 +139,10 @@ What runs: three jobs — one using the local composite action (greeting with la
 
 ---
 
-### [07 · Deployment with Environments](./07-deployment/)
+### [07 · Deployment with Environments](./advanced/07-deployment/)
 **Workflow:** [`07-deployment.yml`](.github/workflows/07-deployment.yml)
 
-Triggers on push to `main`, or manually.
+Triggers on push to `main` or `master`, or manually.
 
 ```bash
 gh workflow run 07-deployment.yml
@@ -150,27 +151,27 @@ gh workflow run 07-deployment.yml
 Works without setup, but to see the full experience (approval gates, environment secrets):
 1. Create `staging` and `production` environments in **Settings → Environments**.
 2. Add yourself as a required reviewer on `production`.
-3. Push to `main` — the workflow pauses before the production job waiting for your approval.
+3. Push to `main` or `master` — the workflow pauses before the production job waiting for your approval.
 
 ---
 
-### [08 · Security](./08-security/)
+### [08 · Security](./advanced/08-security/)
 **Workflow:** [`08-security.yml`](.github/workflows/08-security.yml)
 
-Triggers on push to `08-security/**`, or manually.
+Triggers on push to `advanced/08-security/**`, or manually.
 
 ```bash
 gh workflow run 08-security.yml
 ```
 
-`secrets-demo` and `github-token-demo` jobs run without setup. The `oidc-aws` and `oidc-gcp` jobs require cloud-side OIDC configuration — they will fail until you replace the placeholder ARNs/identifiers. See the [section README](./08-security/) for step-by-step cloud setup.
+`secrets-demo` and `github-token-demo` jobs run without setup. The `oidc-aws` and `oidc-gcp` jobs require cloud-side OIDC configuration — they will fail until you replace the placeholder ARNs/identifiers. See the [section README](./advanced/08-security/) for step-by-step cloud setup.
 
 ---
 
-### [09 · Containers](./09-containers/)
+### [09 · Containers](./advanced/09-containers/)
 **Workflow:** [`09-containers.yml`](.github/workflows/09-containers.yml)
 
-Triggers on push to `09-containers/**`, or manually. No setup required.
+Triggers on push to `advanced/09-containers/**`, or manually. No setup required.
 
 ```bash
 gh workflow run 09-containers.yml
@@ -180,10 +181,10 @@ What runs: `job-in-container` (entire job inside `node:20-alpine`) and `tests-wi
 
 ---
 
-### [10 · Monitoring](./10-monitoring/)
+### [10 · Monitoring](./advanced/10-monitoring/)
 **Workflow:** [`10-monitoring.yml`](.github/workflows/10-monitoring.yml)
 
-Triggers on push to `main` when `10-monitoring/**` changes, or manually.
+Triggers on push to `main` or `master` when `advanced/10-monitoring/**` changes, or manually.
 
 ```bash
 gh workflow run 10-monitoring.yml

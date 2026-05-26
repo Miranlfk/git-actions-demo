@@ -2,7 +2,7 @@
 
 GitHub Actions supports two container patterns: running the entire job inside a Docker image, and attaching sidecar service containers (databases, caches) to a job. This workflow demonstrates both.
 
-**Workflow file:** [`.github/workflows/09-containers.yml`](../.github/workflows/09-containers.yml)
+**Workflow file:** [`.github/workflows/09-containers.yml`](../../.github/workflows/09-containers.yml)
 
 ---
 
@@ -21,11 +21,11 @@ No setup is required — all Docker images are pulled from Docker Hub automatica
 
 ### Trigger on push
 
-The workflow fires on any push that modifies a file under `09-containers/`:
+The workflow fires on any push that modifies a file under `advanced/09-containers/`:
 
 ```bash
-echo " " >> 09-containers/README.md
-git add 09-containers/README.md
+echo " " >> advanced/09-containers/README.md
+git add advanced/09-containers/README.md
 git commit -m "test 09 containers"
 git push
 ```

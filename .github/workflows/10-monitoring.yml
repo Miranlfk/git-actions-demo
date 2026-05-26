@@ -5,13 +5,13 @@ name: "10 - Monitoring and Notifications"
 #   - Debug logging (enable via ACTIONS_STEP_DEBUG secret)
 #   - Annotations (errors/warnings in the Files Changed tab)
 #   - Slack/Teams notifications on failure
-#   - Status badge (see 10-monitoring/README.md)
+#   - Status badge (see advanced/10-monitoring/README.md)
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, master]
     paths:
-      - "10-monitoring/**"
+      - "advanced/10-monitoring/**"
 
 jobs:
   step-summary:

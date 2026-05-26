@@ -2,7 +2,7 @@
 
 Every workflow starts with an `on:` block that defines what events fire it. This single workflow listens to five different event types. Each job uses `if: github.event_name ==` to run only when the right event fires — skipped jobs appear greyed-out in the workflow graph, which is useful for understanding the routing.
 
-**Workflow file:** [`.github/workflows/01-triggers.yml`](../.github/workflows/01-triggers.yml)
+**Workflow file:** [`.github/workflows/01-triggers.yml`](../../.github/workflows/01-triggers.yml)
 
 ---
 
@@ -22,7 +22,7 @@ Every workflow starts with an `on:` block that defines what events fire it. This
 
 ### 1. Push trigger → `ci` job
 
-Push any non-markdown change to `main` or a `feature/*` branch:
+Push any non-markdown change to `main`, `master`, or a `feature/*` branch:
 
 ```bash
 git checkout -b feature/my-test
@@ -40,11 +40,11 @@ Go to the **Actions** tab — the "01 - Triggers" workflow appears. Only the `ci
 
 ### 2. Pull request trigger → `ci` job
 
-Open a pull request targeting `main`:
+Open a pull request targeting `main` or `master`:
 
 ```bash
 # GitHub CLI
-gh pr create --title "Test PR trigger" --body "Testing 01-triggers" --base main
+gh pr create --title "Test PR trigger" --body "Testing 01-triggers" --base master
 ```
 
 Or open a PR through the GitHub UI. The `ci` job runs on `opened`. Every subsequent push to that branch (the `synchronize` event) runs it again. Close and reopen the PR to see `reopened`.

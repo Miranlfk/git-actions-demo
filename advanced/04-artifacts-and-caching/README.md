@@ -2,7 +2,7 @@
 
 Artifacts pass files between jobs (or let you download them after the run). Caching reuses downloaded dependencies across runs. This workflow demonstrates both in a realistic build → deploy flow.
 
-**Workflow file:** [`.github/workflows/04-artifacts-caching.yml`](../.github/workflows/04-artifacts-caching.yml)
+**Workflow file:** [`.github/workflows/04-artifacts-caching.yml`](../../.github/workflows/04-artifacts-caching.yml)
 
 ---
 

@@ -9,7 +9,7 @@ name: "03 - Variables and Expressions"
 on:
   workflow_dispatch:
   push:
-    paths: ["03-environment-variables/**"]
+    paths: ["advanced/03-environment-variables/**"]
 
 # Workflow-level variables — available in every job and step
 env:
@@ -116,7 +116,7 @@ jobs:
       - name: Simulated ternary (no native ternary in Actions)
         run: |
           # condition && value-if-true || value-if-false
-          TARGET="${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}"
+          TARGET="${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && 'production' || 'staging' }}"
           echo "Target: $TARGET"
 
       - name: hashFiles (used in cache keys)

@@ -8,8 +8,8 @@ Reusable workflows let you define a workflow once and call it from many other wo
 
 | File | Role |
 |------|------|
-| [`05-reusable-called.yml`](../.github/workflows/05-reusable-called.yml) | **Definition** — declares inputs, secrets, outputs; cannot be run directly |
-| [`05-reusable-caller.yml`](../.github/workflows/05-reusable-caller.yml) | **Caller** — triggers on push/dispatch, calls the definition twice |
+| [`05-reusable-called.yml`](../../.github/workflows/05-reusable-called.yml) | **Definition** — declares inputs, secrets, outputs; cannot be run directly |
+| [`05-reusable-caller.yml`](../../.github/workflows/05-reusable-caller.yml) | **Caller** — triggers on push/dispatch, calls the definition twice |
 
 ---
 
@@ -21,11 +21,11 @@ Run the **caller** instead:
 
 ### Trigger on push
 
-The caller fires on any push to `main`:
+The caller fires on any push to `main` or `master`:
 
 ```bash
 git commit --allow-empty -m "test 05 reusable workflows"
-git push origin main
+git push origin master
 ```
 
 ### Trigger manually

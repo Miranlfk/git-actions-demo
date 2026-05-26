@@ -7,14 +7,14 @@ on:
   # 1. Push: fires when commits are pushed to matching branches.
   #    path filters prevent running for doc-only changes.
   push:
-    branches: [main, "feature/**"]
+    branches: [main, master, "feature/**"]
     paths-ignore: ["**.md"]
 
-  # 2. Pull request: fires on PR lifecycle events targeting main.
+  # 2. Pull request: fires on PR lifecycle events targeting main/master.
   #    'synchronize' = new commit pushed to the PR branch.
   pull_request:
     types: [opened, synchronize, reopened]
-    branches: [main]
+    branches: [main, master]
 
   # 3. Schedule: cron-based, always UTC.
   #    Tip: always add workflow_dispatch so you can test without waiting.

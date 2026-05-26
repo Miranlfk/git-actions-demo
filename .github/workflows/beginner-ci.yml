@@ -9,7 +9,7 @@ name: "Beginner CI - Build and Publish"
 # and deploys the image it just published.
 on:
   push:
-    branches: [master]
+    branches: [main, master]
     paths:
       - "src/**"
       - "tests/**"
@@ -27,7 +27,7 @@ on:
           - clean
           - vulnerable
 
-# Prevent two releases being created at the same time on master.
+# Prevent two releases being created at the same time on the default branch.
 # cancel-in-progress: false queues new runs rather than cancelling a
 # half-finished release, which could leave an orphaned tag.
 concurrency:

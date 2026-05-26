@@ -2,7 +2,7 @@
 
 GitHub Actions has a layered variable system and an expression language for reading run metadata. This workflow exercises all three layers in separate jobs so you can see each concept in isolation.
 
-**Workflow file:** [`.github/workflows/03-variables-expressions.yml`](../.github/workflows/03-variables-expressions.yml)
+**Workflow file:** [`.github/workflows/03-variables-expressions.yml`](../../.github/workflows/03-variables-expressions.yml)
 
 ---
 
@@ -20,12 +20,12 @@ GitHub Actions has a layered variable system and an expression language for read
 
 ### Trigger on push
 
-The workflow fires on any push that modifies a file inside `03-environment-variables/`:
+The workflow fires on any push that modifies a file inside `advanced/03-environment-variables/`:
 
 ```bash
 # Touch this README to fire it
-echo " " >> 03-environment-variables/README.md
-git add 03-environment-variables/README.md
+echo " " >> advanced/03-environment-variables/README.md
+git add advanced/03-environment-variables/README.md
 git commit -m "test 03 trigger"
 git push
 ```
@@ -142,11 +142,11 @@ These are evaluated at **workflow parse time** by GitHub before the runner execu
 
 **Step: "Simulated ternary"**
 
-If the workflow was triggered from `main`:
+If the workflow was triggered via `workflow_dispatch`:
 ```
-Target: staging    ← because 'main' != 'refs/heads/main' in workflow_dispatch context
+Target: staging    ← github.ref is the short name (e.g. 'main'/'master'), not 'refs/heads/main' or 'refs/heads/master'
 ```
-If triggered by a push to `refs/heads/main`:
+If triggered by a push to `refs/heads/main` or `refs/heads/master`:
 ```
 Target: production
 ```

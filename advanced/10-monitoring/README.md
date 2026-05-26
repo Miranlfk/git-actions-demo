@@ -2,7 +2,7 @@
 
 GitHub Actions provides several built-in mechanisms to communicate results, surface warnings, and debug failures — without needing external tools. This workflow exercises all of them.
 
-**Workflow file:** [`.github/workflows/10-monitoring.yml`](../.github/workflows/10-monitoring.yml)
+**Workflow file:** [`.github/workflows/10-monitoring.yml`](../../.github/workflows/10-monitoring.yml)
 
 ---
 
@@ -18,15 +18,15 @@ GitHub Actions provides several built-in mechanisms to communicate results, surf
 
 ## How to run
 
-### Trigger on push to main
+### Trigger on push to main/master
 
-The workflow fires on any push to `main` that modifies a file under `10-monitoring/`:
+The workflow fires on any push to `main` or `master` that modifies a file under `advanced/10-monitoring/`:
 
 ```bash
-echo " " >> 10-monitoring/README.md
-git add 10-monitoring/README.md
+echo " " >> advanced/10-monitoring/README.md
+git add advanced/10-monitoring/README.md
 git commit -m "test 10 monitoring"
-git push origin main
+git push origin master
 ```
 
 ### Trigger manually
