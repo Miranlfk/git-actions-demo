@@ -2,7 +2,7 @@
 
 A hands-on reference repo covering all major GitHub Actions features. Fork it, run the workflows, and read the section READMEs to understand every detail.
 
-> **Official docs:** [docs.github.com/en/actions](https://docs.github.com/en/actions)
+> **Official docs:** [docs.github.com/en/actions](https://docs.github.com/en/actions) - check this
 
 ---
 
